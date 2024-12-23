@@ -1,0 +1,86 @@
+x-defaults: &defaults
+  user: ${UID}:${GID}
+
+x-env-defaults: &env-defaults
+  http_proxy: ${HTTP_PROXY:-}
+  https_proxy: ${HTTPS_PROXY:-}
+
+services:
+
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgis/postgis:15-3.5}
+    container_name: ${POSTGRES_CONTAINER_NAME:-geonature-atlas-postgres}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT}:5432"
+    networks:
+      - default
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+    volumes:
+      - ./postgres/initdb:/docker-entrypoint-initdb.d/
+      - postgres-storage:/var/lib/postgresql/data
+    healthcheck:
+      # during db init, postgres is not listening on localhost so this avoid false healthy status
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  atlas:
+    <<: *defaults
+    image: ${ATLAS_IMAGE}
+    container_name: ${ATLAS_CONTAINER_NAME:-geonature-atlas}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    #  geonature-backend:
+    #    condition: service_healthy
+    environment:
+      <<: *env-defaults
+      - ATLAS_ALTITUDES=${ATLAS_ALTITUDES:-"(0 500 1000 1500 2000 2500 3000 3500 4000)"}
+      - ATLAS_TYPE_TERRITOIRE=${ATLAS_TYPE_TERRITOIRE:-"PEC"}
+      - ATLAS_TYPE_MAILLE=${ATLAS_TYPE_MAILLE:-"M1"}
+      - ATLAS_INSTALL_SCHEMA=${ATLAS_INSTALL_SCHEMA:-false}
+      - ATLAS_RESET_SCHEMA=${ATLAS_RESET_SCHEMA:-false}
+      - ATLAS_URL_APPLICATION=${ATLAS_URL_APPLICATION:-${ATLAS_HOST}${ATLAS_PREFIX}}
+      - ATLAS_APPLICATION_ROOT=${ATLAS_PREFIX}
+      - ATLAS_REMOTE_MEDIAS_URL=${ATLAS_REMOTE_MEDIAS_URL:-taxhub.${HOST}/}
+      - ATLAS_TAXHUB_URL=${ATLAS_REMOTE_MEDIAS_URL}
+      - ATLAS_REDIMENSIONNEMENT_IMAGE=${ATLAS_REDIMENSIONNEMENT_IMAGE:-true}
+      - ATLAS_SECRET_KEY=${ATLAS_SECRET_KEY}
+      - ATLAS_SQLALCHEMY_DATABASE_URI=${ATLAS_SQLALCHEMY_DATABASE_URI:-"postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"}
+      - ATLAS_TEMPLATES_AUTO_RELOAD=true
+    volumes:
+      - ${ATLAS_VOLUME_CONFIG_DIRECTORY}:/dist/config
+      - ${ATLAS_VOLUME_CUSTOM_DIRECTORY}:/dist/static/custom
+      - ${ASSETS_DIRECTORY}/atlas:/assets
+    networks:
+      - default
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK_NAME:-traefik}"
+      - "traefik.http.routers.${ATLAS_CONTAINER_NAME}.rule=Host(`${ATLAS_HOST}`) && PathPrefix(`${ATLAS_PREFIX}`)"
+      - "traefik.http.routers.${ATLAS_CONTAINER_NAME}.entrypoints=${TRAEFIK_ENTRYPOINTS:-websecure}"
+      - "traefik.http.routers.${ATLAS_CONTAINER_NAME}.tls=${TRAEFIK_TLS:-true}"
+      - "traefik.http.routers.${ATLAS_CONTAINER_NAME}.tls.certresolver=${TRAEFIK_RESOLVER:-acme-resolver}"
+    healthcheck:
+      test: ["CMD-SHELL", "/assets/healthcheck.sh"]
+      interval: ${ATLAS_HEALTHCHECK_INTERVAL}
+      timeout: 10s
+      retries: 20
+      start_period: 0s
+    logging:
+      options:
+        tag: ${ATLAS_CONTAINER_NAME}
+
+volumes:
+  postgres-storage:
+
+networks:
+  traefik:
+    external: true
+

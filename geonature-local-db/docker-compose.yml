@@ -1,0 +1,57 @@
+services:
+
+  geonature-local-postgres:
+    image: ${POSTGRES_IMAGE:-postgis/postgis:15-3.5}
+    container_name: geonature-local-postgres
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+    volumes:
+      - ./assets/postgres/initdb:/docker-entrypoint-initdb.d/
+      - postgres-storage:/var/lib/postgresql/data
+      - ${GEONATURE_DATA_IMPORT_ROOT_PATH}/geonature/data/raw:/app/geonature/data/raw/
+    healthcheck:
+      # during db init, postgres is not listening on localhost so this avoid false healthy status
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  geonature-local-install-db:
+    image: ${GEONATURE_BACKEND_EXTRA_IMAGE}
+    container_name: geonature-local-install-db
+    depends_on:
+      geonature-local-postgres:
+        condition: service_healthy
+    environment:
+      GEONATURE_SQLALCHEMY_DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT:-5432}/${POSTGRES_DB}
+      GEONATURE_URL_APPLICATION: ${GEONATURE_FRONTEND_PROTOCOL}://${GEONATURE_FRONTEND_HOSTPORT}${GEONATURE_FRONTEND_PREFIX}
+      GEONATURE_API_ENDPOINT: ${GEONATURE_BACKEND_PROTOCOL}://${GEONATURE_BACKEND_HOSTPORT}${GEONATURE_BACKEND_PREFIX}
+      GEONATURE_API_TAXHUB: ${TAXHUB_PROTOCOL}://${TAXHUB_HOSTPORT}${TAXHUB_API_PREFIX}
+      GEONATURE_CONFIG_FILE: ${GEONATURE_CONFIG_FILE:-/dist/config/geonature_config.toml}
+      srid_local: ${GEONATURE_DB_LOCAL_SRID}
+      add_sample_data: ${GEONATURE_DB_ADD_SAMPLE_DATA:-false}
+      install_bdc_statuts: ${GEONATURE_DB_INSTALL_BDC_STATUTS:-true}
+      install_sig_layers: ${GEONATURE_DB_INSTALL_SIG_LAYERS:-true}
+      install_grid_layer: ${GEONATURE_DB_INSTALL_GRID_LAYER:-true}
+      install_ref_sensitivity: ${GEONATURE_DB_INSTALL_REF_SENSITIVITY:-true}
+      usershub: ${GEONATURE_DB_INSTALL_USERSHUB:-true}
+      usershub_samples: ${GEONATURE_DB_INSTALL_USERSHUB_SAMPLES:-true}
+      taxhub: ${GEONATURE_DB_INSTALL_TAXHUB:-true}
+      taxhub_samples: ${GEONATURE_DB_INSTALL_TAXHUB_SAMPLES:-true}
+    volumes:
+      - ./config/geonature:/dist/config
+    user: ${UID}:${GID}
+    command: "geonature permissions supergrant --yes ${GEONATURE_SUPERGRANT_ARGS:---help}"
+
+volumes:
+  postgres-storage:
+
+networks:
+  default:
+    name: geonature-local-db-net
+    driver: bridge

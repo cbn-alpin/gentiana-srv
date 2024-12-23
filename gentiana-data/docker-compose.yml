@@ -1,0 +1,32 @@
+x-logging:
+  &default-logging
+  driver: "json-file"
+  options:
+    max-size: 4m
+    max-file: 10
+
+services:
+
+  gentiana-data:
+    image: ${GENTIANA_DATA_IMAGE:-cbna/gentiana-data:main}
+    # See: https://hub.docker.com/r/cbna/gentiana-data
+    # Run with: `docker compose --profile import run gentiana-data -v `
+    container_name: gentiana-data
+    hostname: "${HOSTNAME}_gentiana-data"
+    user: ${UID}:${GID}
+    restart: "no"
+    profiles: ["import"]
+    environment:
+      TZ: ${TZ:-Europe/Paris}
+    logging: *default-logging
+    volumes:
+      - ${GENTIANA_DATA_ROOT_PATH}/geonature/config/settings.ini:/app/geonature/config/settings.ini
+      - ${GENTIANA_DATA_ROOT_PATH}/geonature/data/raw/:/app/geonature/data/raw/
+      - ${GENTIANA_DATA_ROOT_PATH}/geonature/var/:/app/geonature/var/
+      - ${GENTIANA_DATA_ROOT_PATH}/shared/config/settings.ini:/app/shared/config/settings.ini
+      - ${GENTIANA_DATA_ROOT_PATH}/shared/data/raw/:/app/shared/data/raw/
+
+networks:
+  default:
+    name: ${GEONATURE_NETWORK}
+    external: true

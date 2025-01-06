@@ -8,7 +8,7 @@ x-logging:
 services:
 
   gentiana-data:
-    image: ${GENTIANA_DATA_IMAGE:-cbna/gentiana-data:main}
+    image: ${GENTIANA_DATA_IMAGE:-cbna/gentiana-data:1.0.0}
     # See: https://hub.docker.com/r/cbna/gentiana-data
     # Run with: `docker compose --profile import run gentiana-data -v `
     container_name: gentiana-data

@@ -2,8 +2,8 @@ x-logging:
   &default-logging
   driver: "json-file"
   options:
-    max-size: 4m
-    max-file: 10
+    max-size: "4m"
+    max-file: "10"
 
 services:
 
@@ -11,6 +11,7 @@ services:
     image: ${GENTIANA_DATA_IMAGE:-cbna/gentiana-data:1.0.0}
     # See: https://hub.docker.com/r/cbna/gentiana-data
     # Run with: `docker compose --profile import run gentiana-data -v `
+    # With Docker Debian 12, use: `docker-compose run gentiana-data -v `
     container_name: gentiana-data
     hostname: "${HOSTNAME}_gentiana-data"
     user: ${UID}:${GID}

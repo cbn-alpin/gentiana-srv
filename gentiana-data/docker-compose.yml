@@ -8,6 +8,13 @@ x-logging:
 services:
 
   gentiana-data:
+    build:
+      context: ./build/
+      args:
+        - GENTIANA_DATA_IMAGE=${GENTIANA_DATA_IMAGE:-cbna/gentiana-data:1.0.0}
+        - UID=${UID}
+        - GID=${GID}
+        - LOCAL_USER=${LOCAL_USER}
     image: ${GENTIANA_DATA_IMAGE:-cbna/gentiana-data:1.0.0}
     # See: https://hub.docker.com/r/cbna/gentiana-data
     # Run with: `docker compose --profile import run gentiana-data -v `

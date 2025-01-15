@@ -6,10 +6,12 @@ services:
     command: echo "Default GeoNature Traefik service disabled"
 
   redis:
+    container_name: geonature-redis
     networks:
       - default
 
   postgres:
+    container_name: geonature-postgres
     ports:
       - "127.0.0.1:${POSTGRES_HOST_PORT}:5432"
     networks:
@@ -19,6 +21,7 @@ services:
       - ${GENTIANA_DATA_PATH}:/app/geonature/data/raw/
 
   taxhub:
+    container_name: geonature-taxhub
     networks:
       - default
       - traefik
@@ -29,6 +32,7 @@ services:
       - "traefik.http.routers.taxhub.tls.certresolver=myresolver"
 
   usershub:
+    container_name: geonature-usershub
     networks:
       - default
       - traefik
@@ -39,6 +43,7 @@ services:
       - "traefik.http.routers.usershub.tls.certresolver=myresolver"
 
   geonature-backend:
+    container_name: geonature-backend
     networks:
       - default
       - traefik
@@ -49,6 +54,7 @@ services:
       - "traefik.http.routers.geonature-backend.tls.certresolver=myresolver"
 
   geonature-frontend:
+    container_name: geonature-frontend
     networks:
       - default
       - traefik
@@ -59,10 +65,12 @@ services:
       - "traefik.http.routers.geonature.tls.certresolver=myresolver"
 
   geonature-install-db:
+    container_name: geonature-install-db
     networks:
       - default
 
   geonature-worker:
+    container_name: geonature-worker
     networks:
       - default
 

@@ -1,5 +1,5 @@
 diff --git a/docker-compose.yml b/docker-compose.yml
-index 87b00cc..adc37bc 100644
+index 87b00cc..7500cdb 100644
 --- a/docker-compose.yml
 +++ b/docker-compose.yml
 @@ -125,7 +125,7 @@ services:
@@ -11,3 +11,67 @@ index 87b00cc..adc37bc 100644
        TAXHUB_COOKIE_EXPIRATION: 3600
        TAXHUB_PASS_METHOD: "hash"
      labels:
+@@ -193,6 +193,52 @@ services:
+       - "traefik.http.routers.geonature.entrypoints=websecure"
+       - "traefik.http.routers.geonature.tls.certResolver=acme-resolver"
+
++  geonature-atlas:
++    <<: *defaults
++    image: ${ATLAS_IMAGE:-ghcr.io/pnx-si/geonature-atlas:1.6.2}
++    depends_on:
++      postgres:
++        condition: service_healthy
++    environment:
++      <<: *env-defaults
++      POSTGRES_DB: ${POSTGRES_DB}
++      POSTGRES_USER: ${POSTGRES_USER}
++      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
++      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
++      POSTGRES_HOST: ${POSTGRES_HOST}
++      ATLAS_ALTITUDES: ${ATLAS_ALTITUDES:-"(0 500 1000 1500 2000 2500 3000 3500 4000)"}
++      ATLAS_TYPE_TERRITOIRE: ${ATLAS_TYPE_TERRITOIRE:-"PEC"}
++      ATLAS_TYPE_MAILLE: ${ATLAS_TYPE_MAILLE:-"M1"}
++      ATLAS_INSTALL_SCHEMA: ${ATLAS_INSTALL_SCHEMA:-false}
++      ATLAS_RESET_SCHEMA: ${ATLAS_RESET_SCHEMA:-false}
++      ATLAS_URL_APPLICATION: ${ATLAS_URL_APPLICATION:-${ATLAS_HOST}${ATLAS_PREFIX}}
++      ATLAS_APPLICATION_ROOT: ${ATLAS_PREFIX}
++      ATLAS_REMOTE_MEDIAS_URL: ${ATLAS_REMOTE_MEDIAS_URL:-taxhub.${HOST}/}
++      ATLAS_TAXHUB_URL: ${ATLAS_REMOTE_MEDIAS_URL}
++      ATLAS_REDIMENSIONNEMENT_IMAGE: ${ATLAS_REDIMENSIONNEMENT_IMAGE:-true}
++      ATLAS_SECRET_KEY: ${ATLAS_SECRET_KEY}
++      ATLAS_SQLALCHEMY_DATABASE_URI: ${ATLAS_SQLALCHEMY_DATABASE_URI:-"postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"}
++      ATLAS_TEMPLATES_AUTO_RELOAD: "true"
++    volumes:
++      - ./config/atlas:/dist/config
++      - ./data/atlas/custom:/dist/static/custom
++      - ./assets/atlas:/assets
++    labels:
++      - "traefik.enable=true"
++      - "traefik.http.routers.geonature-atlas.rule=Host(`${ATLAS_HOST}`) && PathPrefix(`${ATLAS_PREFIX}`)"
++      - "traefik.http.routers.geonature-atlas.entrypoints=websecure"
++      - "traefik.http.routers.geonature-atlas.tls=true"
++      - "traefik.http.routers.geonature-atlas.tls.certresolver=acme-resolver"
++    healthcheck:
++      test: ["CMD-SHELL", "/assets/healthcheck.sh"]
++      interval: ${ATLAS_HEALTHCHECK_INTERVAL}
++      timeout: 10s
++      retries: 20
++      start_period: 0s
++    logging:
++      options:
++        tag: geonature-atlas
++
+ volumes:
+   redis:
+   postgres:
+diff --git a/init-config.sh b/init-config.sh
+index f897190..52da07d 100755
+--- a/init-config.sh
++++ b/init-config.sh
+@@ -9,3 +9,6 @@ fi
+ if [ ! -f config/taxhub/config.py ]; then
+     echo SECRET_KEY = \"$(openssl rand -hex 16)\" > config/taxhub/config.py
+ fi
++if [ ! -f config/atlas/config.py ]; then
++    echo SECRET_KEY = \"$(openssl rand -hex 16)\" > config/atlas/config.py
++fi

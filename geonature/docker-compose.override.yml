@@ -11,6 +11,12 @@ services:
       - default
 
   postgres:
+    build:
+      context: ./build/postgres/
+      dockerfile: Dockerfile
+      args:
+        - POSTGRES_IMAGE=${POSTGRES_IMAGE:-postgis/postgis:15-3.4}
+        - TZ=${TZ:-Europe/Paris}
     container_name: geonature-postgres
     ports:
       - "127.0.0.1:${POSTGRES_HOST_PORT}:5432"
@@ -18,7 +24,7 @@ services:
       - default
     volumes:
       # Add data directory to use with COPY FROM
-      - ${GENTIANA_DATA_PATH}:/app/geonature/data/raw/
+      - ${GEONATURE_DATA_IMPORT_ROOT_PATH}/geonature/data/raw/:/app/geonature/data/raw/
 
   taxhub:
     container_name: geonature-taxhub
@@ -74,6 +80,27 @@ services:
     networks:
       - default
 
+  geonature-atlas:
+    build:
+      context: ./build/atlas/
+      args:
+        - ATLAS_IMAGE=${ATLAS_IMAGE:-ghcr.io/pnx-si/geonature-atlas:1.6.2}
+        - UID=${UID}
+        - GID=${GID}
+        - HOST_USER=${HOST_USER}
+    container_name: geonature-atlas
+    hostname: "${HOSTNAME}_geonature-atlas"
+    networks:
+      - default
+      - traefik
+    labels:
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.geonature.entrypoints=web,websecure"
+      - "traefik.http.routers.geonature.middlewares=hardening@docker"
+      - "traefik.http.routers.geonature.tls.certresolver=myresolver"
+
 networks:
+  default:
+    name: ${DEFAULT_NETWORK_NAME:-geonature-net}
   traefik:
     external: true

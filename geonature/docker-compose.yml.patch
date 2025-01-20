@@ -1,8 +1,24 @@
 diff --git a/docker-compose.yml b/docker-compose.yml
-index 87b00cc..7500cdb 100644
+index 87b00cc..0c64edf 100644
 --- a/docker-compose.yml
 +++ b/docker-compose.yml
-@@ -125,7 +125,7 @@ services:
+@@ -22,6 +22,7 @@ x-geonature-backend-env: &geonature-backend-env
+   GEONATURE_CONFIG_FILE: ${GEONATURE_CONFIG_FILE:-/dist/config/geonature_config.toml}
+   GEONATURE_CELERY__broker_url: ${GEONATURE_CELERY__broker_url:-redis://redis}
+   GEONATURE_CELERY__result_backend: ${GEONATURE_CELERY__result_backend:-redis://redis}
++  GEONATURE_SECRET_KEY: ${GEONATURE_SECRET_KEY:-""}
+
+ x-geonature-backend-defaults: &geonature-backend-defaults
+   <<: *defaults
+@@ -102,6 +103,7 @@ services:
+       USERSHUB_ACTIVATE_API: ${USERSHUB_ACTIVATE_API:-true}
+       USERSHUB_COOKIE_EXPIRATION: ${USERSHUB_COOKIE_EXPIRATION:-3600}
+       USERSHUB_FILL_MD5_PASS: ${USERSHUB_FILL_MD5_PASS:-false}
++      USERSHUB_SECRET_KEY: ${USERSHUB_SECRET_KEY:-""}
+     labels:
+       - "traefik.enable=true"
+       - "traefik.http.routers.usershub.rule=Host(`${USERSHUB_HOST}`) && PathPrefix(`${USERSHUB_PREFIX}`)"
+@@ -125,9 +127,10 @@ services:
        TAXHUB_SQLALCHEMY_DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT:-5432}/${POSTGRES_DB}
        TAXHUB_SETTINGS: ${TAXHUB_SETTINGS:-/dist/config/config.py}
        TAXHUB_UPLOAD_FOLDER: "medias"
@@ -10,8 +26,11 @@ index 87b00cc..7500cdb 100644
 +      TAXHUB_SQLALCHEMY_TRACK_MODIFICATIONS: "False"
        TAXHUB_COOKIE_EXPIRATION: 3600
        TAXHUB_PASS_METHOD: "hash"
++      TAXHUB_SECRET_KEY: ${TAXHUB_SECRET_KEY:-""}
      labels:
-@@ -193,6 +193,52 @@ services:
+       - "traefik.enable=true"
+       - "traefik.http.routers.taxhub.rule=Host(`${TAXHUB_HOST}`) && PathPrefix(`${TAXHUB_PREFIX}`)"
+@@ -193,6 +196,52 @@ services:
        - "traefik.http.routers.geonature.entrypoints=websecure"
        - "traefik.http.routers.geonature.tls.certResolver=acme-resolver"
 
@@ -38,8 +57,9 @@ index 87b00cc..7500cdb 100644
 +      ATLAS_REMOTE_MEDIAS_URL: ${ATLAS_REMOTE_MEDIAS_URL:-taxhub.${HOST}/}
 +      ATLAS_TAXHUB_URL: ${ATLAS_REMOTE_MEDIAS_URL}
 +      ATLAS_REDIMENSIONNEMENT_IMAGE: ${ATLAS_REDIMENSIONNEMENT_IMAGE:-true}
-+      ATLAS_SECRET_KEY: ${ATLAS_SECRET_KEY}
-+      ATLAS_SQLALCHEMY_DATABASE_URI: ${ATLAS_SQLALCHEMY_DATABASE_URI:-"postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"}
++      ATLAS_SECRET_KEY: ${ATLAS_SECRET_KEY:-""}
++      ATLAS_SQLALCHEMY_DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
++      ATLAS_SQLALCHEMY_TRACK_MODIFICATIONS: "False"
 +      ATLAS_TEMPLATES_AUTO_RELOAD: "true"
 +    volumes:
 +      - ./config/atlas:/dist/config

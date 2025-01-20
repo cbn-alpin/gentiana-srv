@@ -95,9 +95,9 @@ services:
       - traefik
     labels:
       - "traefik.docker.network=traefik"
-      - "traefik.http.routers.geonature.entrypoints=web,websecure"
-      - "traefik.http.routers.geonature.middlewares=hardening@docker"
-      - "traefik.http.routers.geonature.tls.certresolver=myresolver"
+      - "traefik.http.routers.geonature-atlas.entrypoints=web,websecure"
+      - "traefik.http.routers.geonature-atlas.middlewares=hardening@docker"
+      - "traefik.http.routers.geonature-atlas.tls.certresolver=myresolver"
 
 networks:
   default:

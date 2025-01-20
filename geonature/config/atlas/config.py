@@ -1,7 +1,8 @@
 # -*- coding:utf-8 -*-
 # Fichier de configuration
 
-SECRET_KEY = "<your-secret-key>"
+# Don't use this file to store secrets. Use .env instead.
+# Use .env file to store SECRET_KEY with variable ATLAS_SECRET_KEY
 
 # Nom de la structure
 STRUCTURE = "Gentiana"
